@@ -1,0 +1,36 @@
+# Large datasets and archives (excluded per MLSys Project Specifications)
+phishing+websites/
+*.arff
+*.zip
+*.csv
+*.parquet
+
+# Course reference PDFs & local docs
+*.pdf
+*.docx
+
+# Python virtual environments and caches
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Local databases and runtime telemetry queues
+*.db
+*.sqlite
+*.sqlite3
+tier1_edge/offline_queue.json
+
+# OS / IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
