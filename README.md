@@ -23,13 +23,23 @@
 └── tests/                   # Unit and integration test suite (pytest)
 ```
 
-## Quick Start (Phase 1 Verification)
+## Quick Start (Phase 1 & Phase 2 Verification)
 
 1. Install dependencies:
    ```powershell
-   pip install -r requirements.txt
+   python -m pip install -r requirements.txt
    ```
-2. Run the Phase 1 test suite (verifies the 30-feature schema and stratified dataset splits on `phishing+websites/Training Dataset.arff`):
+2. (Optional) Rebuild the 11,055 real-URL lexical corpus (`phishing+websites/tier1_urls.csv`) and retrain the initial models (`models/tier1_v1.onnx` and `models/tier2_v1.joblib`):
    ```powershell
-   pytest tests/test_feature_schema.py tests/test_data_loader.py -v
+   python scripts/prepare_tier1_urls.py
+   python scripts/train_initial_models.py
+   ```
+3. Run the Phase 1 & Phase 2 test suite (83 tests):
+   ```powershell
+   python -m pytest tests/ -v
+   ```
+4. Run the Tier 1 Edge CLI or launch the Mobile/Edge Web Simulator UI:
+   ```powershell
+   python -m tier1_edge.cli https://www.google.com/
+   python -m uvicorn tier1_edge.app:app --reload --port 8501
    ```
