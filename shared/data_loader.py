@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -14,11 +16,17 @@ from shared.feature_schema import (
     TIER2_HEAVY_INDICES,
     label_arff_to_binary,
 )
+from shared.lexical_extractor import extract_tier1_vector
 
 DEFAULT_ARFF_PATH: Path = (
     Path(__file__).resolve().parent.parent
     / "phishing+websites"
     / "Training Dataset.arff"
+)
+DEFAULT_TIER1_URLS_PATH: Path = (
+    Path(__file__).resolve().parent.parent
+    / "phishing+websites"
+    / "tier1_urls.csv"
 )
 
 
@@ -125,19 +133,49 @@ def parse_arff_file(arff_path: str | Path = DEFAULT_ARFF_PATH) -> tuple[np.ndarr
     return X_all, y_binary, feature_attrs
 
 
+@lru_cache(maxsize=2)
+def _load_real_tier1_vectors(csv_path_str: str) -> tuple[np.ndarray, np.ndarray]:
+    """Load and extract 9-feature Tier 1 vectors for (legitimate, phishing) URLs from CSV."""
+    leg_vecs: list[np.ndarray] = []
+    phi_vecs: list[np.ndarray] = []
+    with Path(csv_path_str).open("r", encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            vec = extract_tier1_vector(row["url"])
+            if int(row["label"]) == 0:
+                leg_vecs.append(vec)
+            else:
+                phi_vecs.append(vec)
+    return np.asarray(leg_vecs, dtype=np.float32), np.asarray(phi_vecs, dtype=np.float32)
+
+
 def load_stratified_splits(
     arff_path: str | Path = DEFAULT_ARFF_PATH,
     *,
+    tier1_urls_path: str | Path | None = DEFAULT_TIER1_URLS_PATH,
     train_ratio: float = 0.70,
     stream_ratio: float = 0.15,
     test_ratio: float = 0.15,
     random_state: int = 42,
 ) -> PhishingDatasetSplits:
-    """Load the ARFF dataset and partition into stratified train, stream, and test splits."""
+    """Load the dataset and partition into stratified train, stream, and test splits.
+
+    When `tier1_urls_path` exists, the 9 Tier 1 lexical columns are populated by running
+    `extract_tier1_vector` on real legitimate and PhishTank phishing URLs so that Tier 1
+    training and live URL inference share the exact same feature distribution.
+    """
     if not np.isclose(train_ratio + stream_ratio + test_ratio, 1.0):
         raise ValueError("train_ratio + stream_ratio + test_ratio must equal 1.0")
 
     X_all, y, _ = parse_arff_file(arff_path)
+
+    if tier1_urls_path is not None and Path(tier1_urls_path).exists():
+        leg_vecs, phi_vecs = _load_real_tier1_vectors(str(Path(tier1_urls_path).resolve()))
+        leg_idx = np.where(y == 0)[0]
+        phi_idx = np.where(y == 1)[0]
+        if len(leg_vecs) == len(leg_idx) and len(phi_vecs) == len(phi_idx):
+            X_all = X_all.copy()
+            X_all[leg_idx[:, None], TIER1_INDICES] = leg_vecs
+            X_all[phi_idx[:, None], TIER1_INDICES] = phi_vecs
 
     # First split: Train (70%) vs Temp (30% = Stream + Test)
     temp_ratio = stream_ratio + test_ratio

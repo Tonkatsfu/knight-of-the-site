@@ -23,10 +23,11 @@ __pycache__/
 dist/
 build/
 
-# Local databases and runtime telemetry queues
+# Local databases, large binary model dumps, and runtime telemetry queues
 *.db
 *.sqlite
 *.sqlite3
+models/*.joblib
 tier1_edge/offline_queue.json
 
 # OS / IDE files
