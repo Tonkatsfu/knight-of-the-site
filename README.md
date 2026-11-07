@@ -23,7 +23,7 @@
 └── tests/                   # Unit and integration test suite (pytest)
 ```
 
-## Quick Start (Phase 1 & Phase 2 Verification)
+## Quick Start (Phase 1, Phase 2 & Phase 3 Verification)
 
 1. Install dependencies:
    ```powershell
@@ -34,12 +34,18 @@
    python scripts/prepare_tier1_urls.py
    python scripts/train_initial_models.py
    ```
-3. Run the Phase 1 & Phase 2 test suite (83 tests):
+3. Run the full test suite (102 tests):
    ```powershell
    python -m pytest tests/ -v
    ```
-4. Run the Tier 1 Edge CLI or launch the Mobile/Edge Web Simulator UI:
+4. Launch the Tier 2 Cloud Server (port 8000):
+   ```powershell
+   python -m uvicorn tier2_cloud.app:app --reload --port 8000
+   ```
+5. Run the Tier 1 Edge CLI or launch the Mobile/Edge Web Simulator UI (port 8501):
    ```powershell
    python -m tier1_edge.cli https://www.google.com/
+   python -m tier1_edge.cli http://paypal-account.com/login
+   python -m tier1_edge.cli --sync
    python -m uvicorn tier1_edge.app:app --reload --port 8501
    ```
